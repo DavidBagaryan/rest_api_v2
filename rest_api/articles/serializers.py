@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 from .models import Article, Tag
@@ -8,6 +9,9 @@ class TagSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ('name',)
 
+    def validate(self, attrs):
+        print(attrs)
+
 
 class ArticleSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
@@ -15,7 +19,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ('title', 'description', 'author_name', 'tags_count', 'tags')
+        fields = ('title', 'pub_date', 'description', 'author_name', 'tags_count', 'tags')
 
     def create(self, validated_data):
         print(validated_data)
@@ -23,10 +27,9 @@ class ArticleSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         article = Article.objects.create(**validated_data)
         for tag_data in tags_data:
-            tag, created = Tag.objects.update_or_create(**tag_data)
-            # tag = Tag.objects.get(**tag_data)
-
+            tag = Tag.objects.create(**tag_data)
             article.tags.add(tag)
+
         return article
 
     def get_tags_count(self, obj):
