@@ -10,7 +10,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class ArticleSerializer(serializers.ModelSerializer):
-    tags = TagSerializer(many=True, validators=False)
+    tags = TagSerializer(many=True, required=False)
     tags_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -18,15 +18,21 @@ class ArticleSerializer(serializers.ModelSerializer):
         fields = ('title', 'pub_date', 'description', 'author_name', 'tags_count', 'tags')
 
     def create(self, validated_data):
-        print(validated_data)
-
         tags_data = validated_data.pop('tags')
         article = Article.objects.create(**validated_data)
         for tag_data in tags_data:
-            tag = Tag.objects.update_or_create(**tag_data)
+            tag = Tag.objects.create(**tag_data)
             article.tags.add(tag)
-
         return article
 
-    def get_tags_count(self, obj):
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop('tags')
+        article = Article.objects.get(**validated_data)
+        for tag_data in tags_data:
+            tag = Tag.objects.create(**tag_data)
+            article.tags.add(tag)
+        return article
+
+    @staticmethod
+    def get_tags_count(obj):
         return obj.tags.count()
