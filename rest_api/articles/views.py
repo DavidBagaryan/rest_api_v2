@@ -9,30 +9,31 @@ class ArticleBase:
     serializer_class = ArticleSerializer
 
     existed_tags = []
+    new_tags = []
 
     def filter_tags(self, request):
-        """
-        TODO solve the problem with tags remaining
-        """
-        requested_tags = request.data.get('tags')
-        new_tags = []
-
+        requested_tags = request.data.pop('tags')
         for tag in requested_tags:
-            existed_tag, new = Tag.objects.update_or_create(**tag)
-            if not new:
-                self.existed_tags.append(existed_tag)
-                request.data['tags'].remove(tag)
+            tag_exists = Tag.objects.filter(**tag).first()
+            if tag_exists:
+                self.existed_tags.append(tag_exists)
+            else:
+                self.new_tags.append(tag)
 
-        print(request.data)
         return request
 
     def add_related_data(self, serializer):
-        serializer.validated_data.pop('tags')
         saved_article = Article.objects.get(**serializer.validated_data)
 
-        # print(self.existed_tags)
+        """TODO solve the problem with tags remaining"""
+        # tags_list = set(self.existed_tags) | set(self.new_tags)
+        # print(tags_list)
 
         for tag in self.existed_tags:
+            saved_article.tags.add(tag)
+
+        for tag in self.new_tags:
+            tag, created = Tag.objects.get_or_create(**tag)
             saved_article.tags.add(tag)
 
 

@@ -17,32 +17,6 @@ class ArticleSerializer(serializers.ModelSerializer):
         model = Article
         fields = ('title', 'pub_date', 'description', 'author_name', 'tags_count', 'tags')
 
-    def create(self, validated_data):
-        tags_data = validated_data.pop('tags')
-        article = Article.objects.create(**validated_data)
-        for tag_data in tags_data:
-            tag = Tag.objects.create(**tag_data)
-            article.tags.add(tag)
-        return article
-
-    def update(self, instance, validated_data):
-        tags_data = validated_data.pop('tags')
-        for tag_data in tags_data:
-            tag = Tag.objects.create(**tag_data)
-            instance.tags.add(tag)
-
-        return super().update(instance, validated_data)
-
-    # def update(self, instance, validated_data):
-    #
-        tags_data = validated_data.pop('tags')
-        print(instance)
-        article = Article.objects.get(**validated_data, default=instance)
-        for tag_data in tags_data:
-            tag = Tag.objects.create(**tag_data)
-            article.tags.add(tag)
-    #     return article
-
     @staticmethod
     def get_tags_count(obj):
         return obj.tags.count()
