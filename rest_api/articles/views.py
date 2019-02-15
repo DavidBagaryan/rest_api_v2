@@ -1,74 +1,61 @@
 from rest_framework import generics
 
-from .serializers import ArticleSerializer, TagSerializer
 from .models import Article, Tag
+from .serializers import ArticleSerializer, TagSerializer
 
 
-class ArticleBase:
+class ArticleBaseView:
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
 
-    existed_tags = []
-    new_tags = []
+    tags_to_append = []
 
-    def filter_tags(self, request):
-        requested_tags = request.data.pop('tags')
-        for tag in requested_tags:
-            tag_exists = Tag.objects.filter(**tag).first()
-            if tag_exists:
-                self.existed_tags.append(tag_exists)
-            else:
-                self.new_tags.append(tag)
+    def after_create(self, serializer: ArticleSerializer, update=None):
+        article = Article.objects.get(**serializer.validated_data)
 
-        return request
+        if update:
+            article.tags.clear()
 
-    def add_related_data(self, serializer):
-        saved_article = Article.objects.get(**serializer.validated_data)
-
-        """TODO solve the problem with tags remaining"""
-        # tags_list = set(self.existed_tags) | set(self.new_tags)
-        # print(tags_list)
-
-        for tag in self.existed_tags:
-            saved_article.tags.add(tag)
-
-        for tag in self.new_tags:
+        for tag in self.tags_to_append:
             tag, created = Tag.objects.get_or_create(**tag)
-            saved_article.tags.add(tag)
+            article.tags.add(tag)
 
 
-class TagBase:
+class TagBaseView:
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
 
 
-class ArticleList(ArticleBase, generics.ListCreateAPIView):
+class ArticleListView(ArticleBaseView, generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
-        filtered_request = self.filter_tags(request)
-        return super().post(filtered_request, *args, **kwargs)
+        if 'tags' in request.data:
+            self.tags_to_append += request.data.pop('tags')
+        return super().post(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         super().perform_create(serializer)
-        self.add_related_data(serializer)
+        self.after_create(serializer)
 
 
-class ArticleDetail(ArticleBase, generics.RetrieveUpdateDestroyAPIView):
+class ArticleDetailView(ArticleBaseView, generics.RetrieveUpdateDestroyAPIView):
     def put(self, request, *args, **kwargs):
-        filtered_request = self.filter_tags(request)
-        return super().put(filtered_request, *args, **kwargs)
+        if 'tags' in request.data:
+            self.tags_to_append += request.data.pop('tags')
+        return super().put(request, *args, **kwargs)
 
     def patch(self, request, *args, **kwargs):
-        filtered_request = self.filter_tags(request)
-        return super().patch(filtered_request, *args, **kwargs)
+        if 'tags' in request.data:
+            self.tags_to_append += request.data.pop('tags')
+        return super().patch(request, *args, **kwargs)
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
-        self.add_related_data(serializer)
+        self.after_create(serializer, update=True)
 
 
-class TagList(TagBase, generics.ListCreateAPIView):
+class TagListView(TagBaseView, generics.ListCreateAPIView):
     pass
 
 
-class TagDetail(TagBase, generics.RetrieveUpdateDestroyAPIView):
+class TagDetailView(TagBaseView, generics.RetrieveUpdateDestroyAPIView):
     pass

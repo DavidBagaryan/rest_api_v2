@@ -23,10 +23,10 @@ from . import views
 # router.register('tags', TagList)
 
 urlpatterns = [
-    path('list/', views.ArticleList.as_view()),
-    path('<int:pk>/', views.ArticleDetail.as_view()),
-    path('tags/', views.TagList.as_view()),
-    path('tags/<int:pk>/', views.TagDetail.as_view()),
+    path('list/', views.ArticleListView.as_view()),
+    path('<int:pk>/', views.ArticleDetailView.as_view()),
+    path('tags/', views.TagListView.as_view()),
+    path('tags/<int:pk>/', views.TagDetailView.as_view()),
 
     # path('', include(router.urls)),
 ]

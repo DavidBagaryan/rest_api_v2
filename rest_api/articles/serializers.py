@@ -15,7 +15,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ('title', 'pub_date', 'description', 'author_name', 'tags_count', 'tags')
+        fields = ('id', 'title', 'pub_date', 'description', 'author_name', 'tags_count', 'tags')
 
     @staticmethod
     def get_tags_count(obj):
